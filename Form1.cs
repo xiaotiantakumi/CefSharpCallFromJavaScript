@@ -30,7 +30,7 @@ namespace CefSharpCallFromJavaScript
 
         public void InitializeChromium()
         {
-            CefSharpSettings.LegacyJavascriptBindingEnabled = true;
+            //CefSharpSettings.LegacyJavascriptBindingEnabled = true;
             CefSettings settings = new CefSettings();
             // これを入れないと黒い余白が発生していまう。
             Cef.EnableHighDPISupport();
@@ -40,9 +40,32 @@ namespace CefSharpCallFromJavaScript
             Controls.Add(_browser);
             _browser.Dock = DockStyle.Fill;
 
-            var eventObject = new ScriptedMethodsBoundObject();
-            eventObject.EventArrived += OnJavascriptEventArrived;
-            _browser.RegisterJsObject("boundEvent", eventObject, options: BindingOptions.DefaultBinder);
+            //var eventObject = new ScriptedMethodsBoundObject();
+            //eventObject.EventArrived += OnJavascriptEventArrived;
+            //_browser.RegisterJsObject("boundEvent", eventObject, options: BindingOptions.DefaultBinder);
+
+            //Firstly you can register an object in a similar fashion to before
+            //For standard object registration (equivalent to RegisterJsObject)
+            _browser.JavascriptObjectRepository.Register("bound", new ScriptedMethodsBoundObject(), false, options: BindingOptions.DefaultBinder);
+            //For async object registration (equivalent to RegisterJsObject)
+            _browser.JavascriptObjectRepository.Register("boundAsync", new ScriptedMethodsBoundObject(), true, options: BindingOptions.DefaultBinder);
+
+            //Ability to resolve an object, instead of forcing object registration before the browser has been initialized.
+            _browser.JavascriptObjectRepository.ResolveObject += (sender, e) =>
+            {
+                var repo = e.ObjectRepository;
+                if (e.ObjectName == "boundAsync2")
+                {
+                    repo.Register("boundAsync2", new ScriptedMethodsBoundObject(), isAsync: true, options: BindingOptions.DefaultBinder);
+                }
+            };
+
+            _browser.JavascriptObjectRepository.ObjectBoundInJavascript += (sender, e) =>
+            {
+                var name = e.ObjectName;
+
+                Debug.WriteLine($"Object {e.ObjectName} was bound successfully.");
+            };
         }
 
         public class ScriptedMethodsBoundObject
